@@ -33,3 +33,7 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply_message))
 print("Bot is running...")
 
 app.run_polling()
+
+print("Bot is starting...")
+print("BOT TOKEN EXISTS:", bool(BOT_TOKEN))
+print("GOOGLE KEY EXISTS:", bool(GOOGLE_API_KEY))
