@@ -1,45 +1,35 @@
 import os
-import time
 import requests
 import google.generativeai as genai
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-BOT_A_TOKEN = os.getenv("BOT_A_TOKEN")
-BOT_B_TOKEN = os.getenv("BOT_B_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# ENV VARIABLES
+BOT_TOKEN = os.getenv("BOT_A_TOKEN")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
+# GEMINI SETUP
+genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-bot_a_url = f"https://api.telegram.org/bot{BOT_A_TOKEN}/sendMessage"
-bot_b_url = f"https://api.telegram.org/bot{BOT_B_TOKEN}/sendMessage"
+# MESSAGE HANDLER
+async def reply_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_text = update.message.text
 
-message = "Start talking."
-
-turn = 0
-
-while True:
     try:
-        response = model.generate_content(message)
+        response = model.generate_content(user_text)
         reply = response.text
 
-        if turn % 2 == 0:
-            requests.post(bot_a_url, json={
-                "chat_id": CHAT_ID,
-                "text": f"🤖 Bot A:\n\n{reply}"
-            })
-        else:
-            requests.post(bot_b_url, json={
-                "chat_id": CHAT_ID,
-                "text": f"🛡 Bot B:\n\n{reply}"
-            })
-
-        message = reply
-        turn += 1
-
-        time.sleep(8)
+        await update.message.reply_text(reply)
 
     except Exception as e:
-        print(e)
-        time.sleep(10)
+        await update.message.reply_text(f"Error: {e}")
+
+# MAIN
+app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply_message))
+
+print("Bot is running...")
+
+app.run_polling()
